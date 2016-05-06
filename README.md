@@ -61,6 +61,6 @@ nohup <your command> &
 现已添加merge命令, 用来处理json:
 
 ```
-java -jar petest.jar merge < output.json > result..txt
+java -jar petest.jar merge < output.json > result.txt
 ```
 
