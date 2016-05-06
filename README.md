@@ -19,8 +19,9 @@
 然后sbt就会自动下载所有依赖, 如果顺利的话, 会将jar文件打包到:target/scala-2.11/petest.jar
 
 ## Usage
+### fetch
 ```bash
-java -jar petest.jar 学号 密码 条数 [间隔(ms)] 2> /dev/null
+java -jar petest.jar fetch 学号 密码 条数 [间隔(ms)] 2> /dev/null
 ```
 
 间隔如果不填写则默认为10000(10s), 如果数据量比较大, 一定不要改小了, 不然被查水表后果自负..
@@ -54,3 +55,11 @@ nohup <your command> &
 ```
 
 这样就可以安安心心退出ssh了。
+
+### merge
+现已添加merge命令, 用来处理json:
+
+```
+java -jar petest.jar merge < output.json > result..txt
+```
+

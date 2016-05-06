@@ -1,6 +1,8 @@
 package com.zhranklin
 
 import java.io.{File, FileWriter}
+import java.util.stream.{Collectors, Stream => JStream}
+import javax.swing.text.html.StyleSheet.ListPainter
 
 import com.google.gson.GsonBuilder
 import org.jsoup.Jsoup
@@ -11,15 +13,34 @@ import scala.collection.mutable
 import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.{Random, Try}
+import scala.collection.JavaConversions._
 
-case class Question(content: String, answer: String, validity: String)
-class QType() {override def toString: String = throw new NullPointerException}
-case class DX() extends QType {override def toString = "dx"}
-case class PD() extends QType {override def toString = "pd"}
+case class Question(content: String, answer: String, validity: String) {
+  override def toString = {
+    val v = validity == "正确"
+    s"""Question:
+       |$content#answer#: ${if (!v) "∈" else ""}$answer
+       |
+       |
+       |""".stripMargin
+  }
+}
+
+class QType() {
+  override def toString: String = throw new NullPointerException
+}
+
+case class DX() extends QType {
+  override def toString = "dx"
+}
+
+case class PD() extends QType {
+  override def toString = "pd"
+}
 
 
 class Petest(xh: String, pwd: String) {
-  val COOKIE_FILE = xh+".txt"
+  val COOKIE_FILE = xh + ".txt"
   val LOGIN_UTL = "http://pead.scu.edu.cn/stu/dl.asp"
   val LX_URL = "http://pead.scu.edu.cn/stu/lllx.asp"
   val iconvCommand = Seq("iconv", "-t", "UTF-8", "-f", "GBK")
@@ -43,6 +64,7 @@ class Petest(xh: String, pwd: String) {
       def head(node: Node, depth: Int) =
         if (depth == 0)
           answers += node.attr("value")
+
       def tail(node: Node, depth: Int) = {}
     })
     answers.get(Random.nextInt(answers.length)).get
@@ -76,11 +98,12 @@ class Petest(xh: String, pwd: String) {
 
 object Petest {
   val FILE_NAME = "output.json"
-  def main(args: Array[String]): Unit = {
-    val gson = new GsonBuilder().create
-    val petest = new Petest(args(0), args(1))
-    val times = Integer.parseInt(args(2))
-    val interval = if (args.length > 3) Integer.parseInt(args(3)) else 10000
+  val gson = new GsonBuilder().create
+
+  def fetch(args: Array[String]): Unit = {
+    val petest = new Petest(args(1), args(2))
+    val times = Integer.parseInt(args(3))
+    val interval = if (args.length > 4) Integer.parseInt(args(4)) else 10000
     val fw = new FileWriter(FILE_NAME, true)
     petest.login()
     petest.getBody
@@ -97,5 +120,46 @@ object Petest {
       Thread.sleep(interval)
     }
     fw.close()
+  }
+
+  val HELP =
+    """第一个参数为fetch或merge。
+      |
+    """.stripMargin
+
+  def main(args: Array[String]): Unit = args(0) match {
+    case "fetch" => fetch(args)
+    case "merge" => printMergedData()
+    case _ => println(HELP)
+  }
+
+  def merge() = {
+    Console.in.lines
+      .filter(_.startsWith("{"))
+      .map[Question](gson.fromJson(_, classOf[Question]))
+      .collect(Collectors.groupingBy[Question, String](_.content))
+      .map(_._2)
+      .map { sameQuestions =>
+        sameQuestions.find(_.validity == "正确")
+          .getOrElse {
+            val content = sameQuestions.head.content
+            val dx = "单选题".r.findFirstIn(content).nonEmpty
+            val wa =
+              sameQuestions
+                .filter(_.validity == "错误")
+                .groupBy(_.answer.head)
+                .keys
+                .toList
+            val difference = (if (dx) 'A' to 'D' else 'A' to 'B').toList.diff(wa)
+            val validity = if (difference.length == 1) "正确" else "可能"
+            Question(content, difference.mkString(""), validity)
+          }
+      }
+  }
+
+  def printMergedData() = {
+    val data = merge()
+    val str = data.mkString("")
+    println(s"总计: ${data.size}\n$str")
   }
 }
