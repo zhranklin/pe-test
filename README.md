@@ -1,7 +1,7 @@
 # pe-test
 
 ## Description
-川大体育学院抓题脚本
+无验证码系统网站抓题脚本
 
 ## Disclaimer
 - 该工具没有做任何错误处理, 所以小心使用。
@@ -10,6 +10,7 @@
 ## Prerequisites
 - 要求系统带有curl和iconv两个命令(mac OSX下需要自行安装)
 - 安装[sbt](http://www.scala-sbt.org/0.13/docs/zh-cn/Setup.html)
+- 要求目标网站没有验证码😂
 
 ## Build
 - 安装sbt并确保curl和iconv可以使用
