@@ -113,6 +113,7 @@ object Petest {
         val q = petest.getQuestion
         gson.toJson(q, fw)
         fw.append('\n')
+        fw.flush()
         println("成功.")
       } catch {
         case _: Exception => println("失败.")
