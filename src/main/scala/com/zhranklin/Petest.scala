@@ -136,7 +136,13 @@ object Petest {
   def merge() = {
     Console.in.lines
       .filter(_.startsWith("{"))
-      .map[Question](gson.fromJson(_, classOf[Question]))
+      .map[Question] { l => 
+        try {
+          gson.fromJson(l, classOf[Question])
+        } catch {
+          case e:Exception => Question("", "", "无效")
+        }
+      }
       .collect(Collectors.groupingBy[Question, String](_.content))
       .map(_._2)
       .map { sameQuestions =>
