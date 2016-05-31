@@ -22,3 +22,7 @@ project/plugins/project/
 *.ipr
 *.iws
 .idea/
+
+# Ensime
+.ensime
+.ensime_cache/

@@ -1,26 +1,25 @@
 package com.zhranklin
 
-import java.io.{File, FileWriter}
-import java.util.stream.{Collectors, Stream => JStream}
-import javax.swing.text.html.StyleSheet.ListPainter
+import java.io.FileWriter
+import java.util.stream.Collectors
 
 import com.google.gson.GsonBuilder
 import org.jsoup.Jsoup
 import org.jsoup.nodes.{Element, Node}
 import org.jsoup.select.NodeVisitor
 
+import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.language.postfixOps
 import scala.sys.process._
-import scala.util.{Random, Try}
-import scala.collection.JavaConversions._
+import scala.util.Random
 
 case class Question(content: String, answer: String, validity: String) {
   override def toString = {
     val v = validity == "正确"
     s"""Question:
-       |$content#answer#: ${if (!v) "∈" else ""}$answer
-       |
+        |$content#answer#: ${if (!v) "∈" else ""}$answer
+        |
        |
        |""".stripMargin
   }
@@ -52,21 +51,22 @@ class Petest(xh: String, pwd: String) {
 
   def getQuestionElement(body: Element) = body.select("span[class=style7]").first.parent
 
-  def getQuestionType(body: Element): QType = {
+  def getQuestionType(body: Element): QType =
     if (body.select("input[name=dx][type=hidden]").first != null) DX()
     else if (body.select("input[name=pd][type=hidden]").first != null) PD()
     else new QType
-  }
 
   def choose(question: Element, qType: QType): String = {
     val answers = new mutable.MutableList[String]
-    question.select(s"input[name=${qType}r]").traverse(new NodeVisitor() {
-      def head(node: Node, depth: Int) =
-        if (depth == 0)
-          answers += node.attr("value")
+    question
+      .select(s"input[name=${qType}r]")
+      .traverse(new NodeVisitor() {
+        def head(node: Node, depth: Int) =
+          if (depth == 0)
+            answers += node.attr("value")
 
-      def tail(node: Node, depth: Int) = {}
-    })
+        def tail(node: Node, depth: Int) = {}
+      })
     answers.get(Random.nextInt(answers.length)).get
   }
 
@@ -123,10 +123,7 @@ object Petest {
     fw.close()
   }
 
-  val HELP =
-    """第一个参数为fetch或merge。
-      |
-    """.stripMargin
+  val HELP = "第一个参数为fetch或merge。"
 
   def main(args: Array[String]): Unit = args(0) match {
     case "fetch" => fetch(args)
@@ -137,13 +134,14 @@ object Petest {
   def merge() = {
     Console.in.lines
       .filter(_.startsWith("{"))
-      .map[Question] { l => 
+      .map[Question] { l =>
         try {
           gson.fromJson(l, classOf[Question])
         } catch {
-          case e:Exception => Question("", "", "无效")
+          case e: Exception => Question("", "", "无效")
         }
       }
+      .filter(_.validity != "无效")
       .collect(Collectors.groupingBy[Question, String](_.content))
       .map(_._2)
       .map { sameQuestions =>
